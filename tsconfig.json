@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "rootDir": ".",
+    "baseUrl": ".", // ⬅️ 1. "src"에서 "." (프로젝트 루트)로 변경
+    "paths": {      // ⬅️ 2. 이 "paths" 객체를 통째로 추가
+      "@/*": ["src/*"]
+    },
+    "target": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext"],
+    // (이하 나머지 설정은 그대로 둡니다)
+    "types": ["react-native"],
+    "jsx": "react-native",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "strict": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "include": ["**/*.ts", "**/*.tsx"]
+}
