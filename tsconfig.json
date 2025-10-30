@@ -3,7 +3,7 @@
     "rootDir": ".",
     "baseUrl": ".", // ⬅️ 1. "src"에서 "." (프로젝트 루트)로 변경
     "paths": {      // ⬅️ 2. 이 "paths" 객체를 통째로 추가
-      "@/*": ["src/*"]
+      "@/*": ["./*"]
     },
     "target": "ESNext",
     "moduleResolution": "bundler",
