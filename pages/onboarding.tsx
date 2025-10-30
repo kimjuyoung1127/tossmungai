@@ -8,7 +8,7 @@ import {
   FixedBottomCTAProvider,
   Button,
 } from '@toss/tds-react-native';
-import { createRoute } from '@granite-js/react-native';
+import { createRoute, Video } from '@granite-js/react-native';
 import { appLogin } from '@apps-in-toss/framework';
 import { loginWithToss } from '@/supabase/auth'; // '@/' 경로 별칭 사용 (tsconfig.json 설정 필요)
 
@@ -25,6 +25,7 @@ const adaptive = {
 function OnboardingScreen() {
   const navigation = useNavigation();
   const [isLoading, setIsLoading] = React.useState(false);
+  const videoRef = React.useRef(null);
 
   // 둘러보기 로직: '/home' 등 실제 홈 화면 경로로 수정 필요
   const handleExplore = useCallback(() => {
@@ -35,32 +36,31 @@ function OnboardingScreen() {
   const handleLogin = useCallback(async () => {
     setIsLoading(true);
     try {
-      console.log('Attempting Toss login...');
       const { authorizationCode, referrer } = await appLogin();
-      console.log('Received auth code:', authorizationCode ? 'Yes' : 'No');
 
       if (!authorizationCode) {
         throw new Error('토스 로그인 인가 코드를 받지 못했어요.');
       }
 
-      console.log('Attempting Supabase login with Toss code...');
       await loginWithToss(authorizationCode, referrer);
-      console.log('Supabase login successful.');
 
       // 로그인 성공 시 홈 화면('/home')으로 이동
       navigation.reset({ index: 0, routes: [{ name: '/home' }] });
 
     } catch (error: any) {
-      console.error("Login process failed:", error);
       Alert.alert(
         "로그인 실패",
         `로그인 중 문제가 발생했어요: ${error.message || '알 수 없는 오류'}`
       );
     } finally {
       setIsLoading(false);
-      console.log('Login attempt finished.');
     }
   }, [navigation]); // navigation 의존성 추가
+
+  // Construct the Supabase video URL from environment variable
+  // For Expo, environment variables need to be prefixed with EXPO_PUBLIC_
+  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  const videoUri = supabaseUrl ? `${supabaseUrl}/storage/v1/object/public/onboarding/ai_dog_loop.mp4` : 'https://ewkjiuifaqqdnpvqwuer.supabase.co/storage/v1/object/public/onboarding/ai_dog_loop.mp4';
 
   return (
     <FixedBottomCTAProvider>
@@ -78,7 +78,35 @@ function OnboardingScreen() {
             </Top.SubtitleParagraph>
           }
         />
-        <View />
+        <View style={{ marginVertical: 16, alignItems: 'center' }}>
+        <Video
+          ref={videoRef}
+          source={{ uri: videoUri }}
+          style={{ width: 375, height: 300 }} // Increased height to prevent clipping
+          muted={true}
+          paused={false}
+          isLooping={true}
+          resizeMode="cover"
+          onError={(error) => {
+            // Handle video error silently
+          }}
+          onLoad={() => {
+            // Video loaded successfully
+          }}
+          onPlaybackStateChanged={(state) => {
+            // Monitor playback state but avoid unnecessary intervention
+          }}
+          onEnd={() => {
+            // With isLooping=true, onEnd shouldn't normally fire
+            // But if it does, restart the video with minimal delay
+            setTimeout(() => {
+              if (videoRef.current && videoRef.current.seek) {
+                videoRef.current.seek(0);
+              }
+            }, 50);
+          }}
+        />
+      </View>
       </View>
 
       {/* === 하단 고정 버튼 === */}
