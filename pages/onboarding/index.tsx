@@ -1,4 +1,4 @@
-// onboarding.tsx (Onboarding screen component)
+// onboarding/index.tsx (Onboarding screen component)
 import React, { useCallback } from 'react';
 import { View, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -8,9 +8,10 @@ import {
   FixedBottomCTAProvider,
   Button,
 } from '@toss/tds-react-native';
-import { createRoute, Video } from '@granite-js/react-native';
+import { createRoute } from '@granite-js/react-native';
 import { appLogin } from '@apps-in-toss/framework';
 import { loginWithToss } from '@/supabase/auth'; // '@/' 경로 별칭 사용 (tsconfig.json 설정 필요)
+import VideoContainer from '@/src/components/onboarding/VideoContainer'; // Import the new component
 
 // Granite 라우트 정의
 export const Route = createRoute('/', {
@@ -25,7 +26,6 @@ const adaptive = {
 function OnboardingScreen() {
   const navigation = useNavigation();
   const [isLoading, setIsLoading] = React.useState(false);
-  const videoRef = React.useRef(null);
 
   // 둘러보기 로직: '/home' 등 실제 홈 화면 경로로 수정 필요
   const handleExplore = useCallback(() => {
@@ -78,35 +78,7 @@ function OnboardingScreen() {
             </Top.SubtitleParagraph>
           }
         />
-        <View style={{ marginVertical: 16, alignItems: 'center' }}>
-        <Video
-          ref={videoRef}
-          source={{ uri: videoUri }}
-          style={{ width: 375, height: 300 }} // Increased height to prevent clipping
-          muted={true}
-          paused={false}
-          isLooping={true}
-          resizeMode="cover"
-          onError={(error) => {
-            // Handle video error silently
-          }}
-          onLoad={() => {
-            // Video loaded successfully
-          }}
-          onPlaybackStateChanged={(state) => {
-            // Monitor playback state but avoid unnecessary intervention
-          }}
-          onEnd={() => {
-            // With isLooping=true, onEnd shouldn't normally fire
-            // But if it does, restart the video with minimal delay
-            setTimeout(() => {
-              if (videoRef.current && videoRef.current.seek) {
-                videoRef.current.seek(0);
-              }
-            }, 50);
-          }}
-        />
-      </View>
+        <VideoContainer videoUri={videoUri} />
       </View>
 
       {/* === 하단 고정 버튼 === */}
