@@ -1,37 +1,80 @@
-단일 CTA 전략
+BUNDLE  ./index.ts
 
-“로그인/둘러보기” 이중 버튼 대신 마지막 섹션에 단일 CTA: 1분 만에 시작하기.
 
-상단엔 Skip(나중에) 옵션은 넣지 않고, 최하단 보조 링크로 “나중에 할래요” 정도만.
 
-섹션 구조(4단)
+ LOG  Running "shared" with {"initialProps":{"initialColorPreference":"dark","loadingStartTs":1761976023790,"initialFontScale":"100"},"rootTag":81}
 
-Hero: 현재 쓰는 영상 + 한 줄 메시지
+ ERROR  Error: Unexpected type given to ListRowTexts
 
-Value(3장 카드): AI 맞춤 훈련 / 전문 훈련사 매칭 / 일정·결제 통합
 
-Trust: 리뷰·검증배지·보호자 한 줄 후기 2~3개
 
-CTA: “1분 만에 시작하기” + “로그인 후 언제든 해제 가능해요” 보조문구
+This error is located at:
 
-비주얼 톤
+    in ListRowTexts (created by OnboardingScreen)
 
-실사(강아지 사진) 비중 ↑, 일러스트는 아이콘/보조로만.
+    in RCTView (created by View)
 
-크림 배경(부드러움) + 포인트 블루(신뢰) 조합 유지.
+    in View
 
-카피(국문) — 짧고 감정+가치 한 줄
+토스 강아지 프로젝트
+사용자설정 Gem
+This error, Error: Unexpected type given to ListRowTexts, indicates that the ListRow.Texts component from @toss/tds-react-native does not accept a prop named type with the value "1Row".
 
-Hero: 매일 10분, 우리 강아지가 달라집니다
+This prop was likely based on an incorrect assumption or an example from a different component.
 
-카드1: AI 맞춤 루틴 — 성향을 분석해 훈련을 추천해요
+🛠️ How to Fix
+You need to remove the type="1Row" prop from all three instances of <ListRow.Texts> in your pages/onboarding/index.tsx file. The component will correctly render the text using just the top and topProps.
 
-카드2: 전문 훈련사 연결 — 검증된 프로와 예약까지 한 번에
+Modify this part of your code:
 
-카드3: 기록과 결제, 통합 관리 — 진행률과 비용, 한눈에
-
-Trust: 3일 만에 짖음이 줄었어요! ⭐⭐⭐⭐⭐ (실사용자 톤)
-
-트러스트 요소 전면 배치
-
-“검증 배지”, “리뷰 수”, “재예약 비율” 등의 숫자형 신뢰 지표를 Trust 섹션 상단에.
+TypeScript
+// ... (Value Cards) ...
+<List.Group>
+  <ListRow
+    left={
+      <Asset.Icon
+        name="icon-brain-mono"
+        frameShape={Asset.frameShape.CleanW24}
+      />
+    }
+    contents={
+      <ListRow.Texts
+        // type="1Row"  <--- 1. 이 줄을 삭제하세요
+        top="AI 맞춤 훈련 루틴"
+        topProps={{ typography: 't6', fontWeight: 'semibold' }}
+      />
+    }
+  />
+  <ListRow
+    left={
+      <Asset.Icon
+        name="icon-user-account-mono"
+        frameShape={Asset.frameShape.CleanW24}
+      />
+    }
+    contents={
+      <ListRow.Texts
+        // type="1Row"  <--- 2. 이 줄을 삭제하세요
+        top="전문 훈련사 연결"
+        topProps={{ typography: 't6', fontWeight: 'semibold' }}
+      />
+    }
+  />
+  <ListRow
+    left={
+      <Asset.Icon
+        name="icon-creditcard-mono"
+        frameShape={Asset.frameShape.CleanW24}
+      />
+    }
+    contents={
+      <ListRow.Texts
+        // type="1Row"  <--- 3. 이 줄을 삭제하세요
+        top="기록과 결제, 통합 관리"
+        topProps={{ typography: 't6', fontWeight: 'semibold' }}
+      />
+    }
+  />
+</List.Group>
+// ...
+By removing the unsupported type prop, the error should be resolved.

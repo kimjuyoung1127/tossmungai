@@ -1,12 +1,14 @@
 // onboarding/index.tsx (Onboarding screen component)
 import React, { useCallback } from 'react';
-import { View, Alert } from 'react-native';
+import { View, Alert, ScrollView, StyleSheet, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import {
   Top,
   FixedBottomCTA,
   FixedBottomCTAProvider,
   Button,
+  ListRow,
+  Asset,
 } from '@toss/tds-react-native';
 import { createRoute } from '@granite-js/react-native';
 import { appLogin } from '@apps-in-toss/framework';
@@ -21,7 +23,66 @@ export const Route = createRoute('/', {
 // adaptive 색상 정의
 const adaptive = {
   grey900: '#191F28',
+  grey700: '#5B6371',
 };
+
+// StyleSheet with original-style styles
+const styles = StyleSheet.create({
+  scrollContainer: {
+    paddingBottom: 150, // CTA 높이 고려
+  },
+  section: {
+    marginTop: 32,
+    paddingHorizontal: 16,
+  },
+  sectionTitle: {
+    color: adaptive.grey900,
+    marginBottom: 16,
+  },
+  trustCard: {
+    backgroundColor: '#F2F4F6', // adaptive.grey100
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 16,
+  },
+  trustCardSubtitle: {
+    fontSize: 14,
+    marginTop: 8,
+  },
+  metricContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 16,
+    marginTop: 16,
+  },
+  badge: {
+    backgroundColor: '#E9ECEF',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  bottomCTA: {
+    padding: 20,
+    paddingHorizontal: 16,
+  },
+  ctaSubtext: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: adaptive.grey900,
+    marginTop: 8,
+  },
+  laterText: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: adaptive.grey900,
+    marginTop: 12,
+  },
+});
 
 function OnboardingScreen() {
   const navigation = useNavigation();
@@ -64,49 +125,97 @@ function OnboardingScreen() {
 
   return (
     <FixedBottomCTAProvider>
-      <View style={{ flex: 1, justifyContent: 'space-between', padding: 16 }}>
-        {/* === 메인 콘텐츠 === */}
-        <Top
-          title={
-            <Top.TitleParagraph color={adaptive.grey900}>
-              우리 강아지, AI로 더 행복하게 훈련해요
-            </Top.TitleParagraph>
-          }
-          subtitle2={
-            <Top.SubtitleParagraph>
-              AI가 분석한 맞춤 훈련법을 배우고, 내 주변 최고의 훈련사를 만나보세요.
-            </Top.SubtitleParagraph>
-          }
-        />
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        {/* 1. Hero Section */}
+        <View style={{ padding: 16 }}>
+          <Top
+            title={
+              <Top.TitleParagraph color={adaptive.grey900}>
+                매일 10분, 우리 강아지가 달라집니다
+              </Top.TitleParagraph>
+            }
+            subtitle2={
+              <Top.SubtitleParagraph>
+                AI가 분석한 맞춤 훈련법을 배우고, 내 주변 최고의 훈련사를 만나보세요.
+              </Top.SubtitleParagraph>
+            }
+          />
+        </View>
         <VideoContainer videoUri={videoUri} />
-      </View>
 
-      {/* === 하단 고정 버튼 === */}
-      <FixedBottomCTA.Double
-        leftButton={
-          <Button
-            type="dark"
-            style="weak"
-            display="block"
-            onPress={handleExplore}
-            disabled={isLoading}
-          >
-            로그인 없이 둘러보기
-          </Button>
-        }
-        rightButton={
-          <Button
-            type="primary"
-            style="fill"
-            display="block"
-            onPress={handleLogin}
-            loading={isLoading}
-            disabled={isLoading}
-          >
-            토스로 로그인하기
-          </Button>
-        }
-      />
+        {/* 2. Value Cards Section */}
+        <View style={styles.section}>
+          <View style={{ marginTop: 16 }}>
+            <ListRow
+              left={<Asset.Icon name="icon-brain-mono" frameShape={Asset.frameShape.CleanW24} />}
+              contents={
+                <View>
+                  <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>AI 맞춤 훈련</Text>
+                  <Text style={{ fontSize: 14, color: adaptive.grey700 }}>성향을 분석해 훈련을 추천해요</Text>
+                </View>
+              }
+            />
+            <ListRow
+              left={<Asset.Icon name="icon-user-account-mono" frameShape={Asset.frameShape.CleanW24} />}
+              contents={
+                <View>
+                  <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>전문 훈련사 매칭</Text>
+                  <Text style={{ fontSize: 14, color: adaptive.grey700 }}>검증된 프로와 예약까지 한 번에</Text>
+                </View>
+              }
+            />
+            <ListRow
+              left={<Asset.Icon name="icon-creditcard-mono" frameShape={Asset.frameShape.CleanW24} />}
+              contents={
+                <View>
+                  <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>기록과 결제, 통합 관리</Text>
+                  <Text style={{ fontSize: 14, color: adaptive.grey700 }}>진행률과 비용, 한눈에</Text>
+                </View>
+              }
+            />
+          </View>
+        </View>
+
+        {/* 3. Trust Section with metrics at the top */}
+        <View style={styles.section}>
+          <View style={styles.metricContainer}>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>✓ 검증 배지 100%</Text>
+            </View>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>⭐ 리뷰 1,200+</Text>
+            </View>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>🔄 재예약 87%</Text>
+            </View>
+          </View>
+          <Text style={[styles.sectionTitle, { color: adaptive.grey900, fontWeight: 'bold', fontSize: 18, marginTop: 16 }]}>
+            보호자들이 직접 확인했어요
+          </Text>
+          <View style={styles.trustCard}>
+            <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{"\"3일 만에 짖음이 줄었어요!\" ⭐⭐⭐⭐⭐"}</Text>
+            <Text style={[styles.trustCardSubtitle, { color: adaptive.grey700, marginTop: 4 }]}>
+              - 골든 리트리버 '바둑이' 보호자님
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* 4. Single CTA Section at the bottom */}
+      <View style={styles.bottomCTA}>
+        <Button
+          type="primary"
+          style="fill"
+          display="block"
+          onPress={handleLogin}
+          loading={isLoading}
+          disabled={isLoading}
+        >
+          1분 만에 시작하기
+        </Button>
+        <Text style={styles.ctaSubtext}>로그인 후 언제든 해제 가능해요</Text>
+        <Text style={styles.laterText} onPress={handleExplore}>나중에 할래요</Text>
+      </View>
     </FixedBottomCTAProvider>
   );
 }
