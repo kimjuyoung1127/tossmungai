@@ -108,10 +108,10 @@ function SelectRoleScreen() {
       let nextPage = '';
       switch(selectedRole) {
         case 'user':
-          nextPage = '/register-dog'; // (이 파일이 pages/onboarding/에 있어야 함)
+          nextPage = '/register-dog'; // This now points to /register-dog/index.tsx
           break;
         case 'trainer':
-          nextPage = '/register-provider'; // (이 파일이 pages/onboarding/에 있어야 함)
+          nextPage = '/register-provider'; // This should be updated to match the new structure
           break;
       }
       
