@@ -2,8 +2,8 @@ import React from 'react';
 import { View } from 'react-native';
 import { OnboardingProvider } from '@/src/context/OnboardingContext';
 
-// Onboarding layout component that wraps all onboarding routes with OnboardingProvider
-export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
+// Register dog layout component that wraps all register-dog routes with OnboardingProvider
+export default function RegisterDogLayout({ children }: { children: React.ReactNode }) {
   return (
     <OnboardingProvider>
       <View style={{ flex: 1 }}>{children}</View>

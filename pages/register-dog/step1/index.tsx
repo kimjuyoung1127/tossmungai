@@ -17,6 +17,7 @@ import {
   OpenCameraPermissionError,
   type ImageResponse // 타입 import
 } from '@apps-in-toss/framework'; // <--- Toss SDK 함수 import
+import { useOnboarding } from '@/src/context/OnboardingContext'; // <--- (1) Context 훅 import
 
 // Granite 라우트 정의
 export const Route = createRoute('/register-dog/step1', {
@@ -33,12 +34,10 @@ const adaptive = {
 
 function RegisterDogNameScreen() {
   const navigation = useNavigation();
-  const [dogName, setDogName] = useState('');
-  const [selectedImage, setSelectedImage] = useState<ImageResponse | null>(null); // <--- (추가) 선택된 이미지 상태
-  const [isLoading, setIsLoading] = useState(false); // <--- (수정) 전체 로딩
-  const [isImageLoading, setIsImageLoading] = useState(false); // <--- (추가) 이미지 선택 로딩
+  const { formData, setFormData } = useOnboarding(); // <--- (2) Context에서 상태 가져오기
+  const [isImageLoading, setIsImageLoading] = useState(false); // <--- (수정) 이미지 선택 로딩
 
-  // (추가) 사진 선택 로직
+  // (수정) 사진 선택 로직을 Context에 맞게 업데이트
   const handleSelectImage = useCallback(() => {
     console.log("=== Photo Selection Debug Info ===");
     console.log("Image selection started");
@@ -59,13 +58,18 @@ function RegisterDogNameScreen() {
               // 1. 카메라 열기
               const response = await openCamera({ base64: true, maxWidth: 1024 });
               console.log("Camera response:", response);
-              setSelectedImage(response);
-              console.log("Image set in state:", response ? "success" : "failed");
+              
+              // (3) Context에 이미지 저장
+              setFormData(prev => ({ 
+                ...prev, 
+                imageDataUri: response ? `data:image/jpeg;base64,${response.dataUri}` : null 
+              }));
+              
+              console.log("Image set in context:", response ? "success" : "failed");
             } catch (error: any) {
               console.log("Camera error:", error);
               if (error instanceof OpenCameraPermissionError) {
-                Alert.alert("카메라 권한", "카메라 접근 권한이 필요합니다.");
-                // (Optional) openPermissionDialog() 호출
+                Alert.alert("카메라 권한", "카메라 접근 권한이 필요합니다.\n설정 > 앱에서 권한을 허용해주세요.");
               } else {
                 Alert.alert("오류", "사진 촬영 중 오류가 발생했습니다.");
               }
@@ -87,16 +91,21 @@ function RegisterDogNameScreen() {
               console.log("Album response length:", response.length);
               if (response.length > 0) {
                 console.log("First image data received:", response[0]);
-                setSelectedImage(response[0]);
-                console.log("Image set in state: success");
+                
+                // (3) Context에 이미지 저장
+                setFormData(prev => ({ 
+                  ...prev, 
+                  imageDataUri: `data:image/jpeg;base64,${response[0].dataUri}` 
+                }));
+                
+                console.log("Image set in context: success");
               } else {
                 console.log("No images selected from album");
               }
             } catch (error: any) {
               console.log("Album error:", error);
               if (error instanceof FetchAlbumPhotosPermissionError) {
-                Alert.alert("앨범 권한", "앨범 접근 권한이 필요합니다.");
-                // (Optional) openPermissionDialog() 호출
+                Alert.alert("앨범 권한", "앨범 접근 권한이 필요합니다.\n설정 > 앱에서 권한을 허용해주세요.");
               } else {
                 Alert.alert("오류", "사진을 가져오는 중 오류가 발생했습니다.");
               }
@@ -109,44 +118,40 @@ function RegisterDogNameScreen() {
         { text: "취소", style: "cancel" }
       ]
     );
-  }, [isImageLoading]);
+  }, [isImageLoading, setFormData]);
 
-  // (수정) 다음 단계로 데이터 전달
+  // (수정) 다음 단계로 Context 데이터 전달
   const handleSubmit = useCallback(() => {
     console.log("=== Submit Debug Info ===");
-    console.log("Dog name:", dogName);
-    console.log("Selected image exists:", !!selectedImage);
-    console.log("Image data URI exists:", selectedImage && !!selectedImage.dataUri);
+    console.log("Dog name:", formData.dogName);
+    console.log("Selected image exists:", !!formData.imageDataUri);
     console.log("Navigation object:", navigation);
     console.log("========================");
     
     // Validate required field
-    if (!dogName) {
+    if (!formData.dogName) {
       console.log("Validation failed: Dog name is required");
       Alert.alert("오류", "반려견 이름을 입력해주세요.");
       return;
     }
     
-    // (로직 변경) DB 저장이 아닌, 다음 스텝으로 데이터 전달
+    // (5) DB 저장이 아닌, 다음 스텝으로 이동만 함
     try {
-      const dataToPass = {
-        dogName: dogName,
-        // base64 문자열만 전달 (ImageResponse 객체 전체 전달은 비권장)
-        imageDataUri: selectedImage ? `data:image/jpeg;base64,${selectedImage.dataUri}` : null, 
-      };
-      
-      console.log("Data being passed to next step:", dataToPass);
-      
-      navigation.navigate('/register-dog/step2', dataToPass);
+      navigation.navigate('/register-dog/step2'); // <-- params 필요 없음
     } catch (error: any) {
       console.log("Navigation error:", error);
       Alert.alert("오류", `다음 단계로 이동 중 오류가 발생했습니다: ${error.message}`);
     }
-  }, [navigation, dogName, selectedImage]);
+  }, [navigation, formData.dogName]);
 
   const handleExplore = useCallback(() => {
     navigation.reset({ index: 0, routes: [{ name: '/home' }] });
   }, [navigation]);
+  
+  // (3) 상태 변경 시 Context에 저장
+  const setDogName = (name: string) => {
+    setFormData(prev => ({ ...prev, dogName: name }));
+  };
 
   return (
     <FixedBottomCTAProvider>
@@ -159,16 +164,16 @@ function RegisterDogNameScreen() {
         </View>
 
         <View style={styles.section}>
-          {/* === (추가) 사진 업로드 UI === */}
+          {/* === (수정) 사진 업로드 UI: Context 데이터 사용 === */}
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>프로필 사진 (선택)</Text>
             <Pressable style={styles.imageUploader} onPress={handleSelectImage} disabled={isImageLoading}>
               {isImageLoading ? (
                 <ActivityIndicator size="large" color={adaptive.blue500} />
-              ) : selectedImage ? (
-                // (수정) 선택된 이미지 표시 (base64)
+              ) : formData.imageDataUri ? (
+                // (6) Context 데이터로 UI 표시
                 <Image 
-                  source={{ uri: `data:image/jpeg;base64,${selectedImage.dataUri}` }} 
+                  source={{ uri: formData.imageDataUri }} 
                   style={styles.profileImage}
                   resizeMode="cover" // Ensure proper image display
                 />
@@ -187,7 +192,7 @@ function RegisterDogNameScreen() {
             <Text style={styles.inputLabel}>이름 *</Text>
             <TextInput
               style={styles.inputField}
-              value={dogName}
+              value={formData.dogName || ''}
               onChangeText={setDogName}
               placeholder="예: 바둑이"
               placeholderTextColor="#9E9E9E"
@@ -204,7 +209,7 @@ function RegisterDogNameScreen() {
             style="weak"
             display="block"
             onPress={handleExplore}
-            disabled={isLoading}
+            // Context에서 isLoading 상태를 가져올 수 있도록 확장할 수 있음
           >
             나중에 할래요
           </Button>
@@ -215,8 +220,8 @@ function RegisterDogNameScreen() {
             style="fill"
             display="block"
             onPress={handleSubmit}
-            loading={isLoading}
-            disabled={isLoading || !dogName} // 이름은 필수로
+            // Context에서 isLoading 상태를 가져올 수 있도록 확장할 수 있음
+            disabled={!formData.dogName} // (6) Context 데이터로 검증
           >
             다음
           </Button>

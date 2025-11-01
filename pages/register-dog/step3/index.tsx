@@ -9,6 +9,7 @@ import {
   Button,
 } from '@toss/tds-react-native';
 import { createRoute } from '@granite-js/react-native';
+import { useOnboarding } from '@/src/context/OnboardingContext'; // <--- (1) Context 훅 import
 
 // Granite 라우트 정의
 export const Route = createRoute('/register-dog/step3', {
@@ -51,37 +52,44 @@ const styles = StyleSheet.create({
 
 function RegisterDogAgeScreen() {
   const navigation = useNavigation();
-  const [dogAge, setDogAge] = useState('');
+  const { formData, setFormData } = useOnboarding(); // <--- (2) Context에서 상태 가져오기
   const [isLoading, setIsLoading] = useState(false);
 
+  // (3) 상태 변경 시 Context에 저장
+  const setDogAge = (age: string) => {
+    // Convert to number and store in context
+    const ageInMonths = parseInt(age) || null;
+    setFormData(prev => ({ ...prev, birthDate: ageInMonths ? calculateBirthDate(ageInMonths) : null }));
+  };
+
   const handleSubmit = useCallback(() => {
-    setIsLoading(true);
-    
-    // Validate required field
-    if (!dogAge) {
+    // Validate required field - checking if age is valid
+    if (!formData.birthDate) {
       Alert.alert("오류", "나이를 입력해주세요.");
-      setIsLoading(false);
       return;
     }
     
-    // Navigate to next step
-    setTimeout(() => {
-      try {
-        navigation.reset({ index: 0, routes: [{ name: '/register-dog/step4' }] }); // Go to step 4
-      } catch (error: any) {
-        Alert.alert(
-          "오류",
-          `처리 중 문제가 발생했습니다: ${error.message || '알 수 없는 오류'}`
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    }, 1500);
-  }, [navigation, dogAge]);
+    // (5) 다음 스텝으로 이동
+    try {
+      navigation.navigate('/register-dog/step4'); 
+    } catch (error: any) {
+      Alert.alert(
+        "오류",
+        `처리 중 문제가 발생했습니다: ${error.message || '알 수 없는 오류'}`
+      );
+    }
+  }, [navigation, formData.birthDate]);
 
   const handleExplore = useCallback(() => {
     navigation.reset({ index: 0, routes: [{ name: '/home' }] }); // 예: '/home'
   }, [navigation]);
+
+  // Helper function to calculate birth date from age in months
+  const calculateBirthDate = (ageInMonths: number): string => {
+    const today = new Date();
+    const birthDate = new Date(today.getFullYear(), today.getMonth() - ageInMonths, today.getDate());
+    return birthDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+  };
 
   return (
     <FixedBottomCTAProvider>
@@ -91,7 +99,8 @@ function RegisterDogAgeScreen() {
           <Top
             title={
               <Top.TitleParagraph color={adaptive.grey900}>
-                반려견 정보 등록
+                {/* (6) Context의 이름 사용! */}
+                {formData.dogName || '반려견'}의 나이를 입력해주세요.
               </Top.TitleParagraph>
             }
             subtitle2={
@@ -107,7 +116,7 @@ function RegisterDogAgeScreen() {
             <Text style={styles.inputLabel}>나이 (개월 단위) *</Text>
             <TextInput
               style={styles.inputField}
-              value={dogAge}
+              value={formData.birthDate ? calculateAgeInMonths(formData.birthDate).toString() : ''}
               onChangeText={setDogAge}
               placeholder="예: 12"
               placeholderTextColor="#9E9E9E"
@@ -125,7 +134,6 @@ function RegisterDogAgeScreen() {
             style="weak"
             display="block"
             onPress={handleExplore}
-            disabled={isLoading}
           >
             나중에 할래요
           </Button>
@@ -136,8 +144,7 @@ function RegisterDogAgeScreen() {
             style="fill"
             display="block"
             onPress={handleSubmit}
-            loading={isLoading}
-            disabled={isLoading || !dogAge}
+            disabled={!formData.birthDate} // <--- (4) Context 데이터로 검증
           >
             다음
           </Button>
@@ -146,5 +153,16 @@ function RegisterDogAgeScreen() {
     </FixedBottomCTAProvider>
   );
 }
+
+// Helper function to calculate age in months from birth date
+const calculateAgeInMonths = (birthDateString: string): number => {
+  const birthDate = new Date(birthDateString);
+  const today = new Date();
+  
+  const years = today.getFullYear() - birthDate.getFullYear();
+  const months = today.getMonth() - birthDate.getMonth();
+  
+  return years * 12 + months;
+};
 
 export default RegisterDogAgeScreen;

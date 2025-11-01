@@ -9,6 +9,7 @@ import {
   Button,
 } from '@toss/tds-react-native';
 import { createRoute } from '@granite-js/react-native';
+import { useOnboarding } from '@/src/context/OnboardingContext'; // <--- (1) Context 훅 import
 
 // Granite 라우트 정의
 export const Route = createRoute('/register-dog/step4', {
@@ -51,6 +52,7 @@ const styles = StyleSheet.create({
 
 function RegisterDogConfirmationScreen() {
   const navigation = useNavigation();
+  const { formData, resetForm } = useOnboarding(); // <--- (2) Context에서 상태 가져오기
   const [isLoading, setIsLoading] = React.useState(false);
 
   const handleSubmit = useCallback(() => {
@@ -61,14 +63,21 @@ function RegisterDogConfirmationScreen() {
       try {
         // Log the registration data for verification
         console.log("=== 반려견 등록 정보 ===");
-        console.log("이름: 바둑이");
-        console.log("품종: 골든 리트리버");
-        console.log("나이: 12개월");
-        console.log("성격: 활발하고 친근함");
+        console.log("이름:", formData.dogName);
+        console.log("품종:", formData.breedNameCustom);
+        console.log("나이:", formData.birthDate);
+        console.log("성별:", formData.gender);
+        console.log("중성화 여부:", formData.isNeutered);
+        console.log("체중:", formData.weightKg, "kg");
+        console.log("훈련 목표:", formData.initialTrainingGoals.join(", "));
         console.log("등록 완료 시간:", new Date().toISOString());
         console.log("=====================");
         
         Alert.alert("축하합니다!", "반려견 정보가 성공적으로 등록되었습니다!");
+        
+        // Reset form after successful registration
+        resetForm();
+        
         navigation.reset({ index: 0, routes: [{ name: '/home' }] }); // Go to home
       } catch (error: any) {
         Alert.alert(
@@ -79,11 +88,13 @@ function RegisterDogConfirmationScreen() {
         setIsLoading(false);
       }
     }, 1500);
-  }, [navigation]);
+  }, [navigation, formData, resetForm]);
 
   const handleExplore = useCallback(() => {
+    // Reset form when user decides to explore later
+    resetForm();
     navigation.reset({ index: 0, routes: [{ name: '/home' }] }); // 예: '/home'
-  }, [navigation]);
+  }, [navigation, resetForm]);
 
   return (
     <FixedBottomCTAProvider>
@@ -93,7 +104,8 @@ function RegisterDogConfirmationScreen() {
           <Top
             title={
               <Top.TitleParagraph color={adaptive.grey900}>
-                반려견 정보 등록
+                {/* (6) Context의 이름 사용! */}
+                {formData.dogName || '반려견'} 정보 등록
               </Top.TitleParagraph>
             }
             subtitle2={
@@ -107,10 +119,12 @@ function RegisterDogConfirmationScreen() {
         <View style={styles.section}>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryTitle}>등록 정보 요약</Text>
-            <Text style={styles.summaryText}>이름: 바둑이</Text>
-            <Text style={styles.summaryText}>품종: 골든 리트리버</Text>
-            <Text style={styles.summaryText}>나이: 12개월</Text>
-            <Text style={styles.summaryText}>성격: 활발하고 친근함</Text>
+            <Text style={styles.summaryText}>이름: {formData.dogName || '미입력'}</Text>
+            <Text style={styles.summaryText}>품종: {formData.breedNameCustom || '미선택'}</Text>
+            <Text style={styles.summaryText}>나이: {formData.birthDate ? calculateAgeString(formData.birthDate) : '미입력'} ({formData.birthDate || '미입력'})</Text>
+            <Text style={styles.summaryText}>성별: {formData.gender || '미선택'}</Text>
+            <Text style={styles.summaryText}>중성화 여부: {formData.isNeutered === true ? '예' : formData.isNeutered === false ? '아니오' : '미선택'}</Text>
+            <Text style={styles.summaryText}>체중: {formData.weightKg ? `${formData.weightKg} kg` : '미입력'}</Text>
           </View>
           
           <View style={styles.summaryCard}>
@@ -130,7 +144,6 @@ function RegisterDogConfirmationScreen() {
             style="weak"
             display="block"
             onPress={handleExplore}
-            disabled={isLoading}
           >
             나중에 할래요
           </Button>
@@ -142,7 +155,6 @@ function RegisterDogConfirmationScreen() {
             display="block"
             onPress={handleSubmit}
             loading={isLoading}
-            disabled={isLoading}
           >
             등록 완료
           </Button>
@@ -151,5 +163,24 @@ function RegisterDogConfirmationScreen() {
     </FixedBottomCTAProvider>
   );
 }
+
+// Helper function to convert birth date to age string
+const calculateAgeString = (birthDateString: string): string => {
+  const birthDate = new Date(birthDateString);
+  const today = new Date();
+  
+  const years = today.getFullYear() - birthDate.getFullYear();
+  const months = today.getMonth() - birthDate.getMonth();
+  
+  const totalMonths = years * 12 + months;
+  
+  if (totalMonths < 12) {
+    return `${totalMonths}개월`;
+  } else {
+    const yearsDisplay = Math.floor(totalMonths / 12);
+    const remainingMonths = totalMonths % 12;
+    return remainingMonths > 0 ? `${yearsDisplay}세 ${remainingMonths}개월` : `${yearsDisplay}세`;
+  }
+};
 
 export default RegisterDogConfirmationScreen;

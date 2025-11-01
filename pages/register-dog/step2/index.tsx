@@ -9,6 +9,7 @@ import {
   Button,
 } from '@toss/tds-react-native';
 import { createRoute } from '@granite-js/react-native';
+import { useOnboarding } from '@/src/context/OnboardingContext'; // <--- (1) Context 훅 import
 
 // Granite 라우트 정의
 export const Route = createRoute('/register-dog/step2', {
@@ -53,7 +54,7 @@ const styles = StyleSheet.create({
 
 function RegisterDogBreedScreen() {
   const navigation = useNavigation();
-  const [selectedBreed, setSelectedBreed] = useState<string | null>(null);
+  const { formData, setFormData } = useOnboarding(); // <--- (2) Context에서 상태 가져오기
   const [isLoading, setIsLoading] = useState(false);
 
   const commonBreeds = [
@@ -61,34 +62,27 @@ function RegisterDogBreedScreen() {
     '진도 개', '푸들', '비숑 프리제', '웰시 코기', '보더 콜리', '치와와'
   ];
 
+  // (3) 로컬 상태 대신 Context에 저장
   const handleBreedSelect = (breed: string) => {
-    setSelectedBreed(breed);
+    setFormData(prev => ({ ...prev, breedNameCustom: breed, breedId: null }));
   };
 
   const handleSubmit = useCallback(() => {
-    setIsLoading(true);
-    
-    // Validate required field
-    if (!selectedBreed) {
+    if (!formData.breedNameCustom) { // <--- (4) Context 데이터로 검증
       Alert.alert("오류", "품종을 선택해주세요.");
-      setIsLoading(false);
       return;
     }
     
-    // Navigate to next step
-    setTimeout(() => {
-      try {
-        navigation.reset({ index: 0, routes: [{ name: '/register-dog/step3' }] }); // Go to step 3
-      } catch (error: any) {
-        Alert.alert(
-          "오류",
-          `처리 중 문제가 발생했습니다: ${error.message || '알 수 없는 오류'}`
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    }, 1500);
-  }, [navigation, selectedBreed]);
+    // (5) 다음 스텝으로 이동
+    try {
+      navigation.navigate('/register-dog/step3'); 
+    } catch (error: any) {
+      Alert.alert(
+        "오류",
+        `처리 중 문제가 발생했습니다: ${error.message || '알 수 없는 오류'}`
+      );
+    }
+  }, [navigation, formData.breedNameCustom]);
 
   const handleExplore = useCallback(() => {
     navigation.reset({ index: 0, routes: [{ name: '/home' }] }); // 예: '/home'
@@ -102,7 +96,8 @@ function RegisterDogBreedScreen() {
           <Top
             title={
               <Top.TitleParagraph color={adaptive.grey900}>
-                반려견 정보 등록
+                {/* (6) Context의 이름 사용! */}
+                {formData.dogName || '반려견'}의 품종을 선택해주세요.
               </Top.TitleParagraph>
             }
             subtitle2={
@@ -123,7 +118,7 @@ function RegisterDogBreedScreen() {
                 key={breed}
                 style={[
                   styles.breedOption,
-                  selectedBreed === breed ? styles.selectedBreedOption : null
+                  formData.breedNameCustom === breed ? styles.selectedBreedOption : null
                 ]}
                 onTouchStart={() => handleBreedSelect(breed)}
               >
@@ -142,7 +137,6 @@ function RegisterDogBreedScreen() {
             style="weak"
             display="block"
             onPress={handleExplore}
-            disabled={isLoading}
           >
             나중에 할래요
           </Button>
@@ -153,8 +147,7 @@ function RegisterDogBreedScreen() {
             style="fill"
             display="block"
             onPress={handleSubmit}
-            loading={isLoading}
-            disabled={isLoading || !selectedBreed}
+            disabled={!formData.breedNameCustom} // <--- (4) Context 데이터로 검증
           >
             다음
           </Button>

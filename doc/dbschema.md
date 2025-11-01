@@ -705,3 +705,180 @@ CREATE INDEX idx_notifications_type ON public.notifications(type);
 COMMENT ON TABLE public.notifications IS '사용자에게 발송되는 인앱 알림';
 COMMENT ON COLUMN public.notifications.type IS '알림 종류 구분';
 COMMENT ON COLUMN public.notifications.is_read IS '사용자 읽음 여부';
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'service_type_enum') then
+    create type service_type_enum as enum (
+      'basic_training','behavior_correction','puppy_training',
+      'pet_sitting','dog_walking','grooming','vet_consultation'
+    );
+  end if;
+end$$;
+create or replace view public.provider_profiles_v as
+select
+  t.id                         as id,            -- provider_id == trainer.id
+  t.id                         as user_id,       -- trainers.id = users.id 구조
+  'trainer'                    as type,          -- 향후 union 로 확장
+  coalesce(u.nickname, '훈련사') as display_name,
+  t.introduction               as bio,
+  t.primary_location           as primary_location,
+  5.0::numeric                 as service_radius_km, -- 기본값 (없으므로 5km)
+  null::int                    as hourly_rate_min,   -- 추후 채움
+  'KRW'                        as currency,
+  t.career_years               as experience_years,
+  '[]'::jsonb                  as certifications,
+  false                        as insurance_verified,
+  case when t.is_verified then 'approved' else 'pending' end as background_check_status,
+  t.is_verified                as is_verified,
+  t.avg_rating                 as avg_rating,
+  t.review_count               as review_count,
+  null::numeric                as response_rate,
+  null::numeric                as response_time_hours,
+  t.created_at,
+  t.updated_at
+from public.trainers t
+join public.users u on u.id = t.id;
+create table if not exists public.provider_services (
+  id uuid primary key default gen_random_uuid(),
+  provider_id uuid not null,                 -- trainers.id와 동일 스키마
+  service_code text not null,                -- enum 유사, 검증은 앱 레벨
+  price_min integer,
+  price_unit text not null default 'hour',   -- hour|session|day|week
+  duration_min integer,
+  max_pets integer default 1,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+-- FK는 trainers(기존)와의 호환을 위해 생략(뷰에 FK 불가). 인덱스만 구성.
+create index if not exists idx_provider_services_provider on public.provider_services(provider_id);
+create index if not exists idx_provider_services_code_active on public.provider_services(service_code, is_active);
+
+alter table public.provider_services enable row level security;
+
+drop policy if exists "ps_public_read_active" on public.provider_services;
+create policy "ps_public_read_active"
+on public.provider_services for select using (is_active = true);
+
+drop policy if exists "ps_owner_crud" on public.provider_services;
+create policy "ps_owner_crud"
+on public.provider_services for all
+using (provider_id = auth.uid())
+with check (provider_id = auth.uid());
+create or replace view public.provider_availability_v as
+select
+  ta.trainer_id as provider_id,
+  ta.day_of_week as weekday,
+  jsonb_agg(jsonb_build_object(
+    'start', to_char(ta.start_time, 'HH24:MI'),
+    'end',   to_char(ta.end_time,   'HH24:MI'),
+    'timezone', 'Asia/Seoul'
+  ) order by ta.start_time) as time_ranges
+from public.trainer_availability ta
+group by ta.trainer_id, ta.day_of_week;
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='bookings' and column_name='provider_id'
+  ) then
+    alter table public.bookings
+      add column provider_id uuid generated always as (trainer_id) stored;
+  end if;
+end$$;
+-- schedule_start: 이미 있으면 건너뜀
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='bookings' and column_name='schedule_start'
+  ) then
+    alter table public.bookings
+      add column schedule_start timestamptz
+      generated always as (booking_time) stored;
+  end if;
+end$$;
+
+-- schedule_end: make_interval 대신 '정수 × interval'로 IMMUTABLE 식 사용
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='bookings' and column_name='schedule_end'
+  ) then
+    alter table public.bookings
+      add column schedule_end timestamptz
+      generated always as (booking_time + (coalesce(duration_minutes, 0) * interval '1 minute')) stored;
+  end if;
+end$$;
+
+-- 보조 인덱스 (존재 시 건너뜀)
+create index if not exists idx_bookings_provider_sched
+  on public.bookings(provider_id, schedule_start);
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='reviews' and column_name='provider_id'
+  ) then
+    alter table public.reviews
+      add column provider_id uuid generated always as (trainer_id) stored;
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='reviews' and column_name='is_verified'
+  ) then
+    alter table public.reviews
+      add column is_verified boolean not null default false;
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='reviews' and column_name='provider_reply'
+  ) then
+    alter table public.reviews
+      add column provider_reply text;
+  end if;
+end$$;
+
+create index if not exists idx_reviews_provider_created
+  on public.reviews(provider_id, created_at desc);
+
+CREATE OR REPLACE FUNCTION check_if_admin() 
+RETURNS boolean AS $$
+BEGIN
+  -- 현재 인증된 사용자의 role이 'admin'인지 확인합니다.
+  RETURN EXISTS (
+    SELECT 1
+    FROM public.users
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+2. 기존의 문제 있는 정책 삭제:
+
+SQL
+
+DROP POLICY IF EXISTS "Allow admin read access" ON public.users;
+3. 헬퍼 함수를 사용하는 새 정책 생성:
+
+이제 정책은 헬퍼 함수만 호출하므로 재귀가 발생하지 않습니다.
+
+SQL
+
+CREATE POLICY "Allow admin read access" ON public.users
+FOR SELECT
+USING (check_if_admin() = true);
+4. (권장) 사용자 업데이트 정책 강화:
+
+현재 UPDATE 정책에 WITH CHECK 절이 없어 사용자가 id를 다른 사람의 ID로 변경할 가능성이 있습니다. 아래 코드로 UPDATE 정책을 더 안전하게 만드세요.
+
+SQL
+
+DROP POLICY IF EXISTS "Allow individual update access" ON public.users;
+
+CREATE POLICY "Allow individual update access" ON public.users
+FOR UPDATE
+USING (auth.uid() = id)
+WITH CHECK (auth.uid() = id);
