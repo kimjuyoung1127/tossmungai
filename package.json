@@ -13,6 +13,7 @@
     "@emotion/react": "^11.14.0",
     "@granite-js/native": "0.1.29",
     "@granite-js/react-native": "0.1.29",
+    "@react-native-community/datetimepicker": "^8.5.0",
     "@supabase/supabase-js": "^2.76.1",
     "@toss/tds-mobile": "^2.1.2",
     "@toss/tds-mobile-ait": "^2.1.2",
