@@ -108,7 +108,7 @@ function SelectRoleScreen() {
       let nextPage = '';
       switch(selectedRole) {
         case 'user':
-          nextPage = '/register-dog'; // This now points to /register-dog/index.tsx
+          nextPage = '/register-dog/step1'; // Go directly to step 1
           break;
         case 'trainer':
           nextPage = '/register-provider'; // This should be updated to match the new structure

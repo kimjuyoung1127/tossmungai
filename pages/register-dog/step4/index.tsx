@@ -1,6 +1,6 @@
-// pages/register-dog/index.tsx (Step 1: Name Input)
-import React, { useState, useCallback } from 'react';
-import { View, Alert, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
+// pages/register-dog/step4/index.tsx (Step 4: Confirmation)
+import React, { useCallback } from 'react';
+import { View, Alert, ScrollView, StyleSheet, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import {
   Top,
@@ -11,8 +11,8 @@ import {
 import { createRoute } from '@granite-js/react-native';
 
 // Granite 라우트 정의
-export const Route = createRoute('/register-dog', {
-  component: RegisterDogNameScreen,
+export const Route = createRoute('/register-dog/step4', {
+  component: RegisterDogConfirmationScreen,
 });
 
 // adaptive 색상 정의
@@ -30,49 +30,37 @@ const styles = StyleSheet.create({
     marginTop: 32,
     paddingHorizontal: 16,
   },
-  inputContainer: {
+  summaryCard: {
+    backgroundColor: '#F2F4F6',
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 16,
   },
-  inputLabel: {
-    fontSize: 14,
+  summaryTitle: {
     fontWeight: 'bold',
+    fontSize: 16,
     marginBottom: 8,
     color: adaptive.grey900,
   },
-  inputField: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#FFFFFF',
+  summaryText: {
+    fontSize: 14,
+    color: adaptive.grey700,
+    lineHeight: 20,
   },
 });
 
-function RegisterDogNameScreen() {
+function RegisterDogConfirmationScreen() {
   const navigation = useNavigation();
-  const [dogName, setDogName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
 
   const handleSubmit = useCallback(() => {
     setIsLoading(true);
     
-    // Validate required field
-    if (!dogName) {
-      Alert.alert("오류", "반려견 이름을 입력해주세요.");
-      setIsLoading(false);
-      return;
-    }
-    
-    // Simulate API call or data storage
+    // Complete the registration process
     setTimeout(() => {
       try {
-        // Navigate to next step after successful input
-        // In a real app, you would pass the dogName to the next screen
-        navigation.reset({ index: 0, routes: [{ name: '/register-dog-details' }] }); // Assuming next step
-        
-        // For now, let's go to home
-        // navigation.reset({ index: 0, routes: [{ name: '/home' }] });
+        Alert.alert("축하합니다!", "반려견 정보가 성공적으로 등록되었습니다!");
+        navigation.reset({ index: 0, routes: [{ name: '/home' }] }); // Go to home
       } catch (error: any) {
         Alert.alert(
           "오류",
@@ -82,7 +70,7 @@ function RegisterDogNameScreen() {
         setIsLoading(false);
       }
     }, 1500);
-  }, [navigation, dogName]);
+  }, [navigation]);
 
   const handleExplore = useCallback(() => {
     navigation.reset({ index: 0, routes: [{ name: '/home' }] }); // 예: '/home'
@@ -101,22 +89,26 @@ function RegisterDogNameScreen() {
             }
             subtitle2={
               <Top.SubtitleParagraph>
-                우리 아이 이름을 알려주세요.
+                등록 정보를 확인해주세요.
               </Top.SubtitleParagraph>
             }
           />
         </View>
 
         <View style={styles.section}>
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>이름 *</Text>
-            <TextInput
-              style={styles.inputField}
-              value={dogName}
-              onChangeText={setDogName}
-              placeholder="예: 바둑이"
-              placeholderTextColor="#9E9E9E"
-            />
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryTitle}>등록 정보 요약</Text>
+            <Text style={styles.summaryText}>이름: 바둑이</Text>
+            <Text style={styles.summaryText}>품종: 골든 리트리버</Text>
+            <Text style={styles.summaryText}>나이: 12개월</Text>
+            <Text style={styles.summaryText}>성격: 활발하고 친근함</Text>
+          </View>
+          
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryTitle}>개인정보 처리방침</Text>
+            <Text style={styles.summaryText}>
+              귀하의 개인정보는 안전하게 보호되며, 서비스 제공을 위한 목적으로만 사용됩니다.
+            </Text>
           </View>
         </View>
       </ScrollView>
@@ -141,9 +133,9 @@ function RegisterDogNameScreen() {
             display="block"
             onPress={handleSubmit}
             loading={isLoading}
-            disabled={isLoading || !dogName}
+            disabled={isLoading}
           >
-            다음
+            등록 완료
           </Button>
         }
       />
@@ -151,4 +143,4 @@ function RegisterDogNameScreen() {
   );
 }
 
-export default RegisterDogNameScreen;
+export default RegisterDogConfirmationScreen;
