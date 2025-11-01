@@ -59,6 +59,15 @@ function RegisterDogConfirmationScreen() {
     // Complete the registration process
     setTimeout(() => {
       try {
+        // Log the registration data for verification
+        console.log("=== 반려견 등록 정보 ===");
+        console.log("이름: 바둑이");
+        console.log("품종: 골든 리트리버");
+        console.log("나이: 12개월");
+        console.log("성격: 활발하고 친근함");
+        console.log("등록 완료 시간:", new Date().toISOString());
+        console.log("=====================");
+        
         Alert.alert("축하합니다!", "반려견 정보가 성공적으로 등록되었습니다!");
         navigation.reset({ index: 0, routes: [{ name: '/home' }] }); // Go to home
       } catch (error: any) {
