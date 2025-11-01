@@ -66,21 +66,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-  bottomCTA: {
-    padding: 20,
-    paddingHorizontal: 16,
+  fixedBottomSubText: {
+    alignItems: 'center',
+    marginTop: 8,
   },
   ctaSubtext: {
     textAlign: 'center',
     fontSize: 12,
     color: adaptive.grey900,
-    marginTop: 8,
   },
   laterText: {
     textAlign: 'center',
     fontSize: 14,
     color: adaptive.grey900,
-    marginTop: 12,
+    marginTop: 8,
   },
 });
 
@@ -93,7 +92,7 @@ function OnboardingScreen() {
     navigation.reset({ index: 0, routes: [{ name: '/home' }] }); // 예: '/home'
   }, [navigation]);
 
-  // 로그인 로직은 그대로 둡니다. (버튼 클릭 시 실행됨)
+  // 로그인 후 역할 선택 화면으로 이동
   const handleLogin = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -105,8 +104,8 @@ function OnboardingScreen() {
 
       await loginWithToss(authorizationCode, referrer);
 
-      // 로그인 성공 시 홈 화면('/home')으로 이동
-      navigation.reset({ index: 0, routes: [{ name: '/home' }] });
+      // 로그인 성공 시 역할 선택 화면으로 이동
+      navigation.reset({ index: 0, routes: [{ name: '/onboarding/select-role' }] });
 
     } catch (error: any) {
       Alert.alert(
@@ -201,21 +200,32 @@ function OnboardingScreen() {
         </View>
       </ScrollView>
 
-      {/* 4. Single CTA Section at the bottom */}
-      <View style={styles.bottomCTA}>
-        <Button
-          type="primary"
-          style="fill"
-          display="block"
-          onPress={handleLogin}
-          loading={isLoading}
-          disabled={isLoading}
-        >
-          1분 만에 시작하기
-        </Button>
-        <Text style={styles.ctaSubtext}>로그인 후 언제든 해제 가능해요</Text>
-        <Text style={styles.laterText} onPress={handleExplore}>나중에 할래요</Text>
-      </View>
+      {/* 4. FixedBottomCTA with emphasis on primary action */}
+      <FixedBottomCTA.Double
+        leftButton={
+          <Button
+            type="dark"
+            style="weak"
+            display="block"
+            onPress={handleExplore}
+            disabled={isLoading}
+          >
+            나중에 할래요
+          </Button>
+        }
+        rightButton={
+          <Button
+            type="primary"
+            style="fill"
+            display="block"
+            onPress={handleLogin}
+            loading={isLoading}
+            disabled={isLoading}
+          >
+            1분 만에 시작하기
+          </Button>
+        }
+      />
     </FixedBottomCTAProvider>
   );
 }
